@@ -1,0 +1,282 @@
+
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background-color: #f9f9f9;
+  }
+
+  h3 {
+    color: #333;
+  }
+
+  label {
+    display: inline-block;
+    width: 150px;
+    margin-bottom: 10px;
+    font-weight: bold;
+  }
+
+  input[type="text"] {
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: calc(100% - 160px);
+  }
+
+  button {
+    padding: 10px 15px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 5px;
+  }
+
+  button:hover {
+    background-color: #45a049;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+
+  table, th, td {
+    border: 1px solid black;
+  }
+
+  th, td {
+    padding: 12px;
+    text-align: left;
+  }
+
+  th {
+    background-color: #f28e15;
+    color: white;
+  }
+
+  select {
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+
+  .form-container {
+    max-width: 500px;
+    margin-bottom: 20px;
+  }
+
+  .action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+  }
+</style>
+<script>
+var app = angular
+.module("logsModul", [])
+.controller("logsController", function ($scope) {
+
+// Başlangıçta boş bir logs dizisi
+$scope.logs = [];
+
+// Varsayılan sıralama
+$scope.sutunSirala = "Date";
+
+// Tarih formatını YYYY.AA.GG şeklinde düzenleyen fonksiyon
+$scope.formatDate = function() {
+  // Sadece sayıları al, araya başka nokta eklenmesine izin verme
+  $scope.yeniDate = $scope.yeniDate.replace(/[^0-9]/g, '');
+
+  // Yıl, Ay, Gün formatında düzenleme (YYYY.AA.GG)
+  if ($scope.yeniDate.length >= 4) {
+    $scope.yeniDate = $scope.yeniDate.substring(0, 4) + '.' + $scope.yeniDate.substring(4, 6);
+  }
+  if ($scope.yeniDate.length >= 6) {
+    $scope.yeniDate = $scope.yeniDate.substring(0, 7) + '.' + $scope.yeniDate.substring(6, 8);
+  }
+
+  // Toplam uzunluğu 10 karakterle sınırlamak
+  if ($scope.yeniDate.length > 10) {
+    $scope.yeniDate = $scope.yeniDate.substring(0, 10);
+  }
+};
+
+// Girişin tamamlanmasından sonra tarih doğrulaması
+$scope.validateDate = function() {
+  if ($scope.yeniDate.length === 10) { // Yalnızca tam tarih kontrol edilsin
+    var year = parseInt($scope.yeniDate.substring(0, 4));
+    var month = parseInt($scope.yeniDate.substring(5, 7));
+    var day = parseInt($scope.yeniDate.substring(8, 10));
+
+    // Ay ve gün değerlerinin sınırlandırılması
+    if (month < 1 || month > 12) {
+      alert("Ay bilgisi 01 ile 12 arasında olmalıdır!");
+      return;
+    }
+
+    var maxDay = 31;
+    if ([4, 6, 9, 11].indexOf(month) !== -1) {
+      maxDay = 30;
+    } else if (month === 2) {
+      maxDay = (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)) ? 29 : 28;
+    }
+
+    if (day < 1 || day > maxDay) {
+      alert("Bu ayda en fazla " + maxDay + " gün olabilir!");
+    }
+  }
+};
+
+
+// Kullanıcının girdiği yeni veriyi ekleyecek fonksiyon
+$scope.yeniLogEkle = function() {
+  if ($scope.yeniDate && $scope.yeniCompilerTime && $scope.yeniAdress && $scope.yeniTransfer) {
+    $scope.logs.push({
+      "Date": $scope.yeniDate,
+      "CompilerTime": $scope.yeniCompilerTime,
+      "Adress": $scope.yeniAdress,
+      "Transfer": $scope.yeniTransfer,
+      "editing": false
+    });
+
+    $scope.yeniDate = '';
+    $scope.yeniCompilerTime = '';
+    $scope.yeniAdress = '';
+    $scope.yeniTransfer = '';
+  }
+};
+
+// Satırı silme fonksiyonu
+$scope.satirSil = function(index) {
+  $scope.logs.splice(index, 1);
+};
+
+// Satırı düzenleme moduna alma fonksiyonu
+$scope.satirDuzenle = function(log) {
+  log.editing = true;
+};
+
+// Satır düzenleme işlemini kaydetme fonksiyonu
+$scope.satirKaydet = function(log) {
+  // Düzenleme modunda tarihi doğrulama
+  var year = parseInt(log.Date.substring(0, 4));
+  var month = parseInt(log.Date.substring(5, 7));
+  var day = parseInt(log.Date.substring(8, 10));
+
+  if (month > 12) {
+    alert("Ay bilgisi 12'den büyük olamaz!");
+    log.editing = true;
+    return;
+  }
+
+  var maxDay = 31;
+  if ([4, 6, 9, 11].indexOf(month) !== -1) {
+    maxDay = 30;
+  } else if (month === 2) {
+    maxDay = (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)) ? 29 : 28;
+  }
+
+  if (day > maxDay) {
+    alert("Bu ayda en fazla " + maxDay + " gün olabilir!");
+    log.editing = true;
+    return;
+  }
+
+  log.editing = false;
+};
+
+// Sadece sayısal değerlerin girilmesine izin verecek fonksiyon
+$scope.onlyNumbers = function(event) {
+  var keyCode = event.which || event.keyCode;
+  if ((keyCode < 48 || keyCode > 57) && keyCode !== 8 && keyCode !== 46) {
+    event.preventDefault();
+  }
+};
+
+// Sadece geçerli tarih formatının girilmesine izin verecek fonksiyon
+$scope.validateDateInput = function(event, log) {
+  var keyCode = event.which || event.keyCode;
+  if ((keyCode >= 48 && keyCode <= 57) || keyCode === 8 || keyCode === 46) {
+    return;
+  } else {
+    event.preventDefault();
+  }
+};
+
+});
+</script>
+</head>
+<body ng-app="logsModul">
+<div ng-controller="logsController">
+<div>
+SIRALA: <select ng-model="sutunSirala">
+<option value="-Date">Tarihe Göre En Yeni Sıralama</option>
+<option value="+Date">Tarihe Göre En Eski Sıralama</option>
+<option value="+CompilerTime">Derlenme Zamanına Göre En Erken Çalışan</option>
+<option value="-CompilerTime">Derlenme Zamanına Göre En Geç Çalışan</option>
+<option value="Adress">Adrese Göre Sıralama</option>
+<option value="+Transfer">Transfer Miktarı Artan</option>
+<option value="-Transfer">Transfer Miktarı Azalan</option>
+</select>
+</div>
+
+<!-- Yeni veri girişi için form -->
+<div class="form-container">
+<h3>Yeni Log Ekle</h3>
+<label for="date">Tarih (YYYY.AA.GG):</label>
+<input type="text" ng-model="yeniDate" ng-keyup="formatDate()" ng-blur="validateDate()" maxlength="10" placeholder="YYYY.AA.GG"><br>
+<label for="compilerTime">Derlenme Zamanı:</label>
+<input type="text" ng-model="yeniCompilerTime" ng-keypress="onlyNumbers($event)" placeholder="Derlenme Zamanı"><br>
+<label for="adress">Adres:</label>
+<input type="text" ng-model="yeniAdress" placeholder="Adres"><br>
+<label for="transfer">Transfer:</label>
+<input type="text" ng-model="yeniTransfer" ng-keypress="onlyNumbers($event)" placeholder="Transfer"><br>
+<button ng-click="yeniLogEkle()">Log Ekle</button>
+</div>
+
+<!-- Tablonun gösterimi -->
+<table>
+<thead>
+<tr>
+<th>DATE</th>
+<th>Compiler Time</th>
+<th>Adress</th>
+<th>Transfer</th>
+<th>İşlemler</th>
+</tr>
+</thead>
+<tbody>
+<tr ng-repeat="log in logs | orderBy:sutunSirala">
+<!-- Düzenleme modunda değilse -->
+<td ng-hide="log.editing">{{log.Date}}</td>
+<td ng-hide="log.editing">{{log.CompilerTime}}</td>
+<td ng-hide="log.editing">{{log.Adress}}</td>
+<td ng-hide="log.editing">{{log.Transfer}}</td>
+
+<!-- Düzenleme modundaysa -->
+<td ng-show="log.editing"><input type="text" ng-model="log.Date" maxlength="10" ng-keypress="validateDateInput($event, log)"></td>
+<td ng-show="log.editing"><input type="text" ng-model="log.CompilerTime" ng-keypress="onlyNumbers($event)"></td>
+<td ng-show="log.editing"><input type="text" ng-model="log.Adress"></td>
+<td ng-show="log.editing"><input type="text" ng-model="log.Transfer" ng-keypress="onlyNumbers($event)"></td>
+
+<!-- İşlem düğmeleri -->
+<td class="action-buttons">
+  <button ng-show="!log.editing" ng-click="satirDuzenle(log)">Düzenle</button>
+  <button ng-show="log.editing" ng-click="satirKaydet(log)">Kaydet</button>
+  <button ng-click="satirSil($index)">Sil</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</body>
+</html>
